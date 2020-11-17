@@ -1,4 +1,4 @@
-package main
+package structs
 
 import (
 	"net/http"
@@ -51,3 +51,15 @@ type Route struct {
 
 // HandlerFunc type used to specify a template for handler functions to follow
 type HandlerFunc func(w http.ResponseWriter, r *http.Request) error
+
+// Handler object used for allowing handler functions to accept
+// an environment object
+type Handler struct {
+	H func(w http.ResponseWriter, r *http.Request) error
+}
+
+type Error interface {
+	error
+	Status() int
+}
+

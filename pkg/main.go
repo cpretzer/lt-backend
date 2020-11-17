@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"os"
 	"time"
+	"github.com/cpretzer/lt-backend/pkg/router"
 )
 
 func main() {
@@ -34,12 +35,12 @@ func main() {
 	glog.Info("GLOG: Starting invitations service")
 
 
-	router := NewRouter()
+	router := router.NewRouter()
 
-	port, isSet := os.LookupEnv(servicePortVariable)
+	port, isSet := os.LookupEnv("SERVICE_PORT")
 
 	if !isSet || port == "" {
-		port = defaultServicePort
+		port = "3001"
 	}
 
 	log.Printf("Using service port %v", port)

@@ -1,13 +1,10 @@
-package main
+package router
 
 import (
-	"encoding/json"
-	"fmt"
-	"github.com/golang/glog"
-	"github.com/gorilla/mux"
-	"log"
 	"net/http"
-	"time"
+	"log"
+	"github.com/gorilla/mux"
+	"github.com/cpretzer/lt-backend/pkg/structs"
 )
 
 // Router for associating HTTP requests with functions based on URI
@@ -24,7 +21,7 @@ func NewRouter() *mux.Router {
 			Methods(route.Method).
 			Path(route.Pattern).
 			Name(route.Name).
-			Handler(Handler{env, route.Function})
+			Handler(Handler{route.Function})
 
 	}
 
@@ -35,6 +32,34 @@ func NewRouter() *mux.Router {
 type HttpResponseError struct {
 	errorMessage string
 }
+
+// Handler object used for allowing handler functions to accept
+// an environment object
+type Handler struct {
+	H func(w http.ResponseWriter, r *http.Request) error
+}
+
+
+// ServeHTTP is called on each HTTP request. Specifies which function is
+// called as well as how errors are handled and how logging is set
+func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	err := h.H(w, r)
+	if err != nil {
+		switch e := err.(type) {
+		case structs.Error:
+			// We can retrieve the status here and write out a specific
+			// HTTP status code.
+			log.Printf("HTTP %d - %s", e.Status(), e)
+			http.Error(w, e.Error(), e.Status())
+		default:
+			// Any error types we don't specifically look out for default
+			// to serving a HTTP 500
+			http.Error(w, http.StatusText(http.StatusInternalServerError),
+				http.StatusInternalServerError)
+		}
+	}
+}
+
 
 func NewHttpResponseError(msg string) error {
 	return &HttpResponseError{
