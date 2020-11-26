@@ -19,8 +19,8 @@ package main
 import (
 
 	"flag"
+	"fmt"
 	"github.com/golang/glog"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -43,10 +43,13 @@ func main() {
 		port = "3001"
 	}
 
-	log.Printf("Using service port %v", port)
+	glog.Info(fmt.Sprintf("Using service port %v", port))
 
 	// Listen for requests on port :8080 with router and logging
-	log.Fatal(http.ListenAndServe(":"+port, router))
+	err := http.ListenAndServe(":"+port, router)
+	if err != nil {
+		glog.Fatalf("ListenAndServe error %s", err)
+	}
 }
 
 func initAirTableClient() http.Client {
