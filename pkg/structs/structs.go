@@ -2,6 +2,7 @@ package structs
 
 import (
 	"net/http"
+	at "github.com/cpretzer/lt-backend/pkg/airtable"
 )
 
 type Questionnaire struct {
@@ -50,13 +51,14 @@ type Route struct {
 }
 
 // HandlerFunc type used to specify a template for handler functions to follow
-type HandlerFunc func(w http.ResponseWriter, r *http.Request) error
+type HandlerFunc func(atClient *at.AirtableClient, w http.ResponseWriter, r *http.Request) error
 
 // Handler object used for allowing handler functions to accept
 // an environment object
-type Handler struct {
-	H func(w http.ResponseWriter, r *http.Request) error
-}
+// type Handler struct {
+// 	*at.AirtableClient
+// 	H func(atClient *at.AirtableClient, w http.ResponseWriter, r *http.Request) error
+// }
 
 type Error interface {
 	error

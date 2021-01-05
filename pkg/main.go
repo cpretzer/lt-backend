@@ -25,6 +25,7 @@ import (
 	"os"
 	"time"
 	"github.com/cpretzer/lt-backend/pkg/router"
+	at "github.com/cpretzer/lt-backend/pkg/airtable"
 )
 
 func main() {
@@ -35,7 +36,12 @@ func main() {
 	glog.Info("GLOG: Starting invitations service")
 
 
-	router := router.NewRouter()
+	airtableClient, err := at.InitializeClient()
+	if err != nil {
+		glog.Fatalf("Unable to Initialize client: %s", err)
+	}
+
+	router := router.NewRouter(airtableClient)
 
 	port, isSet := os.LookupEnv("SERVICE_PORT")
 
@@ -45,15 +51,12 @@ func main() {
 
 	glog.Info(fmt.Sprintf("Using service port %v", port))
 
+	now := time.Now()
+
+	glog.Infof("%s Initialized airtable client %+v", now, airtableClient)
 	// Listen for requests on port :8080 with router and logging
-	err := http.ListenAndServe(":"+port, router)
+	err = http.ListenAndServe(":"+port, router)
 	if err != nil {
 		glog.Fatalf("ListenAndServe error %s", err)
-	}
-}
-
-func initAirTableClient() http.Client {
-	return http.Client{
-		Timeout: time.Second * 15,
 	}
 }

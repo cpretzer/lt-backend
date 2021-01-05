@@ -4,6 +4,8 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
@@ -12,72 +14,125 @@ import (
 )
 
 const (
-	// airTableKeyVariable  = "AIRTABLE_KEY"
-	airTableKeyVariable = ""
-	// airTableAppVariable  = "AIRTABLE_APP"
-	airTableAppVariable = ""
-	// airTableHostVariable = "AIRTABLE_HOST"
-	airTableHostVariable = "https://api.airtable.com/v0/"
-	defaultAirTableUrl   = "https://api.airtable.com/v0/%s/names?api_key=%s"
-	airTableUrlString    = "https://api.airtable.com/v0/%s/names?api_key=%s"
+	airtableKeyVariable  = "AIRTABLE_KEY"
+	airtableBaseVariable  = "AIRTABLE_BASE"
+	airtableHostVariable = "AIRTABLE_HOST"
+	defaultAirtableHost = "https://api.airtable.com/v0/"
 )
 
 type AirTableClientInterface interface{}
 
-type AirTableClient struct {
-	AirTableKey    string
-	AirTableUrl    *string
-	AirTableClient http.Client
+type AirtableClient struct {
+	Key    *string
+	Url    *string
+	Client http.Client
 }
 
-func InitializeClient() (*AirTableClient, error) {
+type AirtableRequest struct {
+	Method string
+	Table string
+	BytesReader io.Reader
+}
+
+func InitializeClient() (*AirtableClient, error) {
 
 	// for glog and anything else
 	flag.Parse()
 
 	glog.Info("Starting airtable service")
 
-	airTableUrl, err := generateAirTableURL()
+	airtableUrl, err := generateAirtableURL()
 
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("Unable to connect to generate AirTable URL %v", err))
 	}
 
-	airTableKey, isSet := os.LookupEnv(airTableKeyVariable)
+	airtableKey, isSet := os.LookupEnv(airtableKeyVariable)
 
-	if !isSet || airTableKey == "" {
+	if !isSet || airtableKey == "" {
 		return nil, errors.New("The AIRTABLE_KEY environment variable is not set")
 	}
 
-	return &AirTableClient{
-		AirTableKey:    airTableKey,
-		AirTableUrl:    airTableUrl,
-		AirTableClient: initAirTableClient(),
+	return &AirtableClient{
+		Key:    &airtableKey,
+		Url:    airtableUrl,
+		Client: initAirtableClient(),
 	}, nil
 
 }
 
-func generateAirTableURL() (*string, error) {
-	airTableAppID, isSet := os.LookupEnv(airTableAppVariable)
+func (c *AirtableClient) SendRequest(req *AirtableRequest) ([]byte, error) {
+	url := fmt.Sprintf(*c.Url, req.Table)
+	
+	httpReq, err := req.buildHttpRequest(url, c.Key)
+	if err != nil {
+		glog.Errorf("Error sending the AirtableRequest %s", err)
+		return nil, err
+	}
+
+	glog.Infof("Generated HTTP request %s", httpReq.Header.Get(authorizationHeader))
+	glog.Infof("Sending request to %s using key %s", url, *c.Key)
+
+	resp, err := c.Client.Do(httpReq)
+	if err != nil {
+		glog.Errorf("Error sending request to airtable %s", err)
+		return nil, err
+	}
+
+	respBytes, err := ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		glog.Errorf("There was an error reading the response body %s", err)
+	}
+
+	glog.V(8).Infof("Got response body %v", string(respBytes))
+
+	defer resp.Body.Close()
+	
+	return respBytes, nil
+}
+
+func (r *AirtableRequest) buildHttpRequest(url string, key *string) (*http.Request, error) {
+	httpReq, err := http.NewRequest(
+		r.Method,
+		url,
+		r.BytesReader)
+
+	if err != nil {
+		glog.Errorf("There was an error building the HTTP request %s", err)
+		return nil, err
+	}
+
+	httpReq.Header.Add(contentHeader, jsonUtf8)
+	httpReq.Header.Add(authorizationHeader, fmt.Sprintf(bearerString, *key))
+
+	return httpReq, nil
+}
+
+
+func generateAirtableURL() (*string, error) {
+	airtableBaseId, isSet := os.LookupEnv(airtableBaseVariable)
 
 	if !isSet {
 		return nil, errors.New("AirTable App ID is not set")
 	}
 
-	airTableHost, isSet := os.LookupEnv(airTableHostVariable)
+	airtableHost, isSet := os.LookupEnv(airtableHostVariable)
 
 	if !isSet {
-		airTableHost = defaultAirTableUrl
+		airtableHost = defaultAirtableHost
 	}
 
-	url := fmt.Sprintf(airTableUrlString, airTableHost, airTableAppID)
+	airtableBaseUrl := fmt.Sprintf(airtableHost + "%s", airtableBaseId) + "/%s"
 
-	glog.Infof("Initialized AirTable URL: %v", url)
+	// url := fmt.Sprintf(airtableBaseUrl, airtableBaseVariable)
 
-	return &url, nil
+	glog.Infof("Initialized Airtable URL: %v", airtableBaseUrl)
+
+	return &airtableBaseUrl, nil
 }
 
-func initAirTableClient() http.Client {
+func initAirtableClient() http.Client {
 	return http.Client{
 		Timeout: time.Second * 15,
 	}

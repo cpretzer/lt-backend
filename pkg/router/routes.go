@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"github.com/cpretzer/lt-backend/pkg/structs"
 	"github.com/cpretzer/lt-backend/pkg/handlers"
+	"github.com/cpretzer/lt-backend/pkg/users"
 )
 
 type Routes []structs.Route
@@ -17,5 +18,29 @@ var routes = Routes{
 		Method: http.MethodGet,
 		Pattern: "/",
 		Function: handlers.HandleHome,
+	},
+	structs.Route{
+		Name: "GetUser",
+		Method: http.MethodGet,
+		Pattern: "/users",
+		Function: users.HandleGetUser,
+	},
+	structs.Route{
+		Name: "AddUser",
+		Method: http.MethodPost,
+		Pattern: "/users/add",
+		Function: users.HandleAddUser,
+	},
+	structs.Route{
+		Name: "UpdateUser",
+		Method: http.MethodPut,
+		Pattern: "/users/update",
+		Function: users.HandleUpdateUser,
+	},
+	structs.Route{
+		Name: "DeleteUser",
+		Method: http.MethodDelete,
+		Pattern: "/users/delete",
+		Function: users.HandleDeleteUser,
 	},
 }
