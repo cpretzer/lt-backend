@@ -19,6 +19,8 @@ var routes = Routes{
 		Pattern: "/",
 		Function: handlers.HandleHome,
 	},
+	// TODO: Think about separating these out into a separate array of
+	// routes that can be appended
 	structs.Route{
 		Name: "GetUser",
 		Method: http.MethodGet,

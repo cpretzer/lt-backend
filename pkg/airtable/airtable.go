@@ -34,6 +34,16 @@ type AirtableRequest struct {
 	BytesReader io.Reader
 }
 
+type AirtableRecord struct {
+	CreatedTime string     `json:"createdTime,omitempty"`
+	Fields      interface{} `json:"fields,omitempty"`
+	Id          string     `json:"id,omitempty"`
+}
+
+type AirtablePayload struct {
+	Records []AirtableRecord `json:"records,omitempty"`
+}
+
 func InitializeClient() (*AirtableClient, error) {
 
 	// for glog and anything else
