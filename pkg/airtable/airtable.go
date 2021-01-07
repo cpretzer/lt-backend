@@ -6,7 +6,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -33,7 +32,6 @@ type AirtableRequest struct {
 	Method string
 	Table string
 	Payload *AirtablePayload
-	BytesReader io.Reader
 }
 
 type AirtableRecord struct {
@@ -189,7 +187,6 @@ func (c *AirtableClient) CreateAirtableRequest(method string, table string) *Air
 		Method: method,
 		Table: table,
 		Payload: &AirtablePayload{Records: requestRecords},
-		BytesReader: nil,
 	}
 
 	glog.V(8).Infof("Created airtableRequest %+v", airtableRequest)

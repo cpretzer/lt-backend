@@ -2,7 +2,6 @@ package users
 
 import (
 	"encoding/json"
-	"bytes"
 	"io/ioutil"
 	"net/http"
 	"github.com/golang/glog"
@@ -15,7 +14,7 @@ func HandleGetUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Reques
 	bytes, err := c.SendRequest(&at.AirtableRequest{
 		Method: http.MethodGet,
 		Table: "users",
-		BytesReader: new(bytes.Buffer),
+		Payload: nil,
 	})
 
 	if err != nil {
@@ -79,7 +78,7 @@ func HandleDeleteUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Req
 	bytes, err := c.SendRequest(&at.AirtableRequest{
 		Method: http.MethodGet,
 		Table: "users",
-		BytesReader: new(bytes.Buffer),
+		Payload: nil,
 	})
 
 	if err != nil {
@@ -96,7 +95,7 @@ func HandleUpdateUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Req
 	bytes, err := c.SendRequest(&at.AirtableRequest{
 		Method: http.MethodGet,
 		Table: "users",
-		BytesReader: new(bytes.Buffer),
+		Payload: nil,
 	})
 
 	if err != nil {

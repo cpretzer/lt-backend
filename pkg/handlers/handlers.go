@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"bytes"
 	"github.com/golang/glog"
 	"net/http"
 	at "github.com/cpretzer/lt-backend/pkg/airtable"
@@ -12,7 +11,7 @@ func HandleHome(atClient *at.AirtableClient, w http.ResponseWriter, req *http.Re
 	bytes, err := atClient.SendRequest(&at.AirtableRequest{
 		Method: http.MethodGet,
 		Table: "users",
-		BytesReader: new(bytes.Buffer),
+		Payload: nil,
 	})
 
 	if err != nil {
