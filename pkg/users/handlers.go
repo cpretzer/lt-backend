@@ -1,11 +1,13 @@
 package users
 
 import (
-	"bytes"
 	"encoding/json"
+	"bytes"
+	"io/ioutil"
 	"net/http"
 	"github.com/golang/glog"
 	at "github.com/cpretzer/lt-backend/pkg/airtable"
+	handlers "github.com/cpretzer/lt-backend/pkg/handlers"
 )
 
 func HandleGetUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Request) error {
@@ -28,48 +30,40 @@ func HandleGetUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Reques
 
 func HandleAddUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Request) error {
 
-	user := &User{
-		FirstName: "Charles",
-		LastName: "Pretzer",
-		EmailAddress: "c@chabrina.com",
-		Username: "cpretzer",
-	}
-
-	glog.V(8).Infof("Created user %+v", user)
-
-	addUserRecord := &at.AirtableRecord{
-		Fields: *user,
-	}
-
-	glog.V(8).Infof("Created addUserRecord %+v", addUserRecord)
-
-	userRecords := make([]at.AirtableRecord, 0)
-
-	userRecords = append(userRecords, *addUserRecord)
-
-	glog.V(8).Infof("Created user records %+v", userRecords)
-
-	addUserPayload := &at.AirtablePayload{
-		Records: userRecords,
-	}
-
-	glog.V(8).Infof("Created add user payload %+v", addUserPayload)
-
-	b := new(bytes.Buffer)
-
-	err := json.NewEncoder(b).Encode(addUserPayload)
+	glog.V(5).Infof("add user %v", req.Body)
+	body, err := ioutil.ReadAll(req.Body)
 
 	if err != nil {
-		glog.Errorf("Encoded Bytes error %s", err)
+		glog.Errorf("unable to parse body %v", err)
+		handlers.WriteResponse(w, &handlers.JsonResponse{
+			Code:    http.StatusBadRequest,
+			Message: "[TBDXXX] Unable to update add user",
+		}, http.StatusBadRequest)
 		return nil
 	}
-	
 
-	bytes, err := c.SendRequest(&at.AirtableRequest{
-		Method: http.MethodPost,
-		Table: "users",
-		BytesReader: b,
-	})
+	var addUser User
+	err = json.Unmarshal(body, &addUser)
+
+	if err != nil {
+		glog.Errorf("Unable to unmarshal body %s, [%s]", string(body), err)
+	}
+
+	glog.V(8).Infof("Created user %+v", addUser)
+
+	addUserRequest := c.CreateAirtableRequest(http.MethodPost, usersTable)
+
+	glog.V(8).Infof("Created add user request %+v", addUserRequest)
+
+	// addUserRecord := &at.AirtableRecord{
+	// 	Fields: *user,
+	// }
+
+	addUserRecord := addUserRequest.CreateRecord(addUser)
+
+	addUserRequest.AddRecordToRequest(*addUserRecord)	
+
+	bytes, err := c.SendRequest(addUserRequest)
 
 	if err != nil {
 		glog.Errorf("Error calling add user %s", err)

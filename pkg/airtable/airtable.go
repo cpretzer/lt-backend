@@ -1,6 +1,8 @@
 package airtable
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -9,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"time"
-
 	"github.com/golang/glog"
 )
 
@@ -31,6 +32,7 @@ type AirtableClient struct {
 type AirtableRequest struct {
 	Method string
 	Table string
+	Payload *AirtablePayload
 	BytesReader io.Reader
 }
 
@@ -103,10 +105,21 @@ func (c *AirtableClient) SendRequest(req *AirtableRequest) ([]byte, error) {
 }
 
 func (r *AirtableRequest) buildHttpRequest(url string, key *string) (*http.Request, error) {
+
+	b := new(bytes.Buffer)
+
+	err := json.NewEncoder(b).Encode(r.Payload)
+
+	if err != nil {
+		glog.Errorf("Encoded Bytes error %s", err)
+		return nil, err
+	}
+
+
 	httpReq, err := http.NewRequest(
 		r.Method,
 		url,
-		r.BytesReader)
+		b)
 
 	if err != nil {
 		glog.Errorf("There was an error building the HTTP request %s", err)
@@ -146,4 +159,40 @@ func initAirtableClient() http.Client {
 	return http.Client{
 		Timeout: time.Second * 15,
 	}
+}
+
+func (r *AirtableRequest) CreateRecord(fields interface{}) *AirtableRecord {
+
+	glog.V(8).Infof("CreateRecord called with %+v", fields)
+
+	airtableRecord := &AirtableRecord{
+		Fields: &fields,
+	}
+
+	glog.V(8).Infof("Created airtableRecord %+v", airtableRecord)
+
+	return airtableRecord
+}
+
+func (r *AirtableRequest) AddRecordToRequest(rec AirtableRecord) {	
+
+	r.Payload.Records = append(r.Payload.Records, rec)
+
+	glog.V(8).Infof("AirtableRequest.Records after append %+v", r.Payload.Records)
+}
+
+func (c *AirtableClient) CreateAirtableRequest(method string, table string) *AirtableRequest {
+
+	requestRecords := make([]AirtableRecord, 0)
+
+	airtableRequest := &AirtableRequest{
+		Method: method,
+		Table: table,
+		Payload: &AirtablePayload{Records: requestRecords},
+		BytesReader: nil,
+	}
+
+	glog.V(8).Infof("Created airtableRequest %+v", airtableRequest)
+
+	return airtableRequest
 }
