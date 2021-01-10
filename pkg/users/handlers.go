@@ -11,19 +11,33 @@ import (
 
 func HandleGetUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Request) error {
 
-	bytes, err := c.SendRequest(&at.AirtableRequest{
-		Method: http.MethodGet,
-		Table: "users",
-		Payload: nil,
-	})
+	userId := req.URL.Query().Get(handlers.IdParam)
+
+	if userId == "" {
+		glog.Errorf("No ID parameter")
+		handlers.WriteResponse(w, &handlers.JsonResponse{
+			Code: http.StatusBadRequest,
+			Message: "No user ID param", 
+		}, http.StatusBadRequest)
+	}	
+	
+	getUserRequest := c.MakeGetRecordRequest(usersTable, userId)
+
+	bytes, err := c.SendRequest(getUserRequest)
 
 	if err != nil {
-		glog.Errorf("Error calling get users %s", err)
+		glog.Errorf("Error calling get user %s", err)
 	}
 
 	glog.Infof("Got bytes %s", string(bytes))
 	
-	glog.Infof("GetUser called %s", req.Method)
+	var user User
+	err = json.Unmarshal(bytes, &user)
+
+	if err != nil {
+		glog.Errorf("Error unmarshaling the user request body %s", err)
+	}
+
 	return nil
 }
 

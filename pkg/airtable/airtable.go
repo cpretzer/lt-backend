@@ -159,6 +159,13 @@ func initAirtableClient() http.Client {
 	}
 }
 
+func (c *AirtableClient) MakeGetRecordRequest(table string, recordId string) *AirtableRequest {
+	getRecordRequest := c.CreateAirtableRequest(http.MethodGet, table)
+	*c.Url = fmt.Sprintf("%s/%s", *c.Url, recordId)
+	glog.V(8).Infof("Updated client URL %s", *c.Url)
+	return getRecordRequest
+}
+
 func (r *AirtableRequest) CreateRecord(fields interface{}) *AirtableRecord {
 
 	glog.V(8).Infof("CreateRecord called with %+v", fields)
