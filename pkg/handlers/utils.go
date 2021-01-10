@@ -13,10 +13,10 @@ const (
 	randStringArray     = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890~!@#$%^&*()|}{"
 )
 
-func WriteError(w http.ResponseWriter, e *error, code string, message string) error {
+func WriteError(w http.ResponseWriter, e *error, code uint, message string) error {
 	glog.Errorf("[%v] %v %v", code, message, *e)
 	WriteResponse(w, &JsonResponse{
-		Code:    http.StatusBadRequest,
+		Code:    code,
 		Message: message,
 	}, http.StatusBadRequest)
 	return nil

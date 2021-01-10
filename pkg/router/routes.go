@@ -35,7 +35,7 @@ var routes = Routes{
 	},
 	structs.Route{
 		Name: "UpdateUser",
-		Method: http.MethodPut,
+		Method: http.MethodPatch,
 		Pattern: "/users/update",
 		Function: users.HandleUpdateUser,
 	},

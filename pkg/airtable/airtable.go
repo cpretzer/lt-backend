@@ -98,6 +98,12 @@ func (c *AirtableClient) SendRequest(req *AirtableRequest) ([]byte, error) {
 	glog.V(8).Infof("Got response body %v", string(respBytes))
 
 	defer resp.Body.Close()
+
+	if resp.StatusCode >= 300 {
+		glog.Errorf("Airtable returned an error status %d", resp.StatusCode)
+		return nil, errors.New(
+			fmt.Sprintf("Airtable response is an error %s", err))
+	}
 	
 	return respBytes, nil
 }
@@ -164,6 +170,13 @@ func (c *AirtableClient) MakeGetRecordRequest(table string, recordId string) *Ai
 	*c.Url = fmt.Sprintf("%s/%s", *c.Url, recordId)
 	glog.V(8).Infof("Updated client URL %s", *c.Url)
 	return getRecordRequest
+}
+
+func (c *AirtableClient) MakeFilterRecordRequest(table string, filterQuery string) *AirtableRequest {
+	filterRecordRequest := c.CreateAirtableRequest(http.MethodGet, table)
+	*c.Url = fmt.Sprintf("%s%s", *c.Url, filterQuery)
+	glog.V(8).Infof("Updated client URL for filter record %s", *c.Url)
+	return filterRecordRequest
 }
 
 func (r *AirtableRequest) CreateRecord(fields interface{}) *AirtableRecord {

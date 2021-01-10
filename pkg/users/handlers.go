@@ -2,7 +2,7 @@ package users
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"errors"
 	"net/http"
 	"github.com/golang/glog"
 	at "github.com/cpretzer/lt-backend/pkg/airtable"
@@ -12,13 +12,17 @@ import (
 func HandleGetUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Request) error {
 
 	userId := req.URL.Query().Get(handlers.IdParam)
-
+	
+	var err error
 	if userId == "" {
 		glog.Errorf("No ID parameter")
-		handlers.WriteResponse(w, &handlers.JsonResponse{
-			Code: http.StatusBadRequest,
-			Message: "No user ID param", 
-		}, http.StatusBadRequest)
+		err := errors.New("No ID param")
+		handlers.WriteError(w,
+			&err,
+			http.StatusBadRequest,
+			"Unable to update user",
+		)
+		return nil
 	}	
 	
 	getUserRequest := c.MakeGetRecordRequest(usersTable, userId)
@@ -27,6 +31,12 @@ func HandleGetUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Reques
 
 	if err != nil {
 		glog.Errorf("Error calling get user %s", err)
+		handlers.WriteError(w,
+			&err,
+			http.StatusBadRequest,
+			"Unable to update user",
+		)
+		return nil
 	}
 
 	glog.Infof("Got bytes %s", string(bytes))
@@ -36,6 +46,12 @@ func HandleGetUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Reques
 
 	if err != nil {
 		glog.Errorf("Error unmarshaling the user request body %s", err)
+		handlers.WriteError(w,
+			&err,
+			http.StatusBadRequest,
+			"Unable to update user",
+		)
+		return nil
 	}
 
 	return nil
@@ -44,25 +60,18 @@ func HandleGetUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Reques
 func HandleAddUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Request) error {
 
 	glog.V(5).Infof("add user %v", req.Body)
-	body, err := ioutil.ReadAll(req.Body)
+
+	user, err := UnmarshalUser(req)
 
 	if err != nil {
-		glog.Errorf("unable to parse body %v", err)
-		handlers.WriteResponse(w, &handlers.JsonResponse{
-			Code:    http.StatusBadRequest,
-			Message: "[TBDXXX] Unable to update add user",
-		}, http.StatusBadRequest)
+		glog.Errorf("Error unmarshaling the user request body %s", err)
+		handlers.WriteError(w,
+			&err,
+			http.StatusBadRequest,
+			"Unable to update user",
+		)
 		return nil
 	}
-
-	var addUser User
-	err = json.Unmarshal(body, &addUser)
-
-	if err != nil {
-		glog.Errorf("Unable to unmarshal body %s, [%s]", string(body), err)
-	}
-
-	glog.V(8).Infof("Created user %+v", addUser)
 
 	addUserRequest := c.CreateAirtableRequest(http.MethodPost, usersTable)
 
@@ -72,7 +81,7 @@ func HandleAddUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Reques
 	// 	Fields: *user,
 	// }
 
-	addUserRecord := addUserRequest.CreateRecord(addUser)
+	addUserRecord := addUserRequest.CreateRecord(user)
 
 	addUserRequest.AddRecordToRequest(*addUserRecord)	
 
@@ -106,11 +115,41 @@ func HandleDeleteUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Req
 }
 
 func HandleUpdateUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Request) error {
-	bytes, err := c.SendRequest(&at.AirtableRequest{
-		Method: http.MethodGet,
-		Table: "users",
-		Payload: nil,
-	})
+
+	glog.V(8).Infof("HandleUpdateUser %s", req.Body)
+
+	userUpdate, err := UnmarshalUser(req)
+
+	if err != nil {
+		glog.Errorf("Error unmarshaling the user request body %s", err)
+		handlers.WriteError(w,
+			&err,
+			http.StatusBadRequest,
+			"Unable to update user",
+		)
+		return nil
+	}
+
+	existingUser, userId, err := RetrieveUserByEmailAddress(userUpdate.EmailAddress, c)
+
+	if existingUser == nil {
+		glog.V(8).Infof("No user found")
+		handlers.WriteError(w, &err, 
+			http.StatusBadRequest, "Unable to update user")
+		return nil
+	}
+
+	existingUser.FirstName = userUpdate.FirstName
+	existingUser.LastName = userUpdate.LastName
+	existingUser.Username = userUpdate.Username
+
+	updateRequest := c.CreateAirtableRequest(http.MethodPatch, usersTable)
+
+	updateRecord := updateRequest.CreateRecord(existingUser)
+	updateRecord.Id = *userId
+	updateRequest.AddRecordToRequest(*updateRecord)
+
+	bytes, err := c.SendRequest(updateRequest)
 
 	if err != nil {
 		glog.Errorf("Error calling update user %s", err)
