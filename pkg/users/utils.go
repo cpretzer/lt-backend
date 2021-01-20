@@ -32,7 +32,7 @@ func UnmarshalUser(req *http.Request) (*User, error) {
 	return &user, nil
 }
 
-func RetrieveUserByEmailAddress(emailAddress string, c *at.AirtableClient) (*User, *string, error) {
+func RetrieveUserByEmailAddress(emailAddress string, c *at.AirtableClient) (*User, error) {
 
 	queryString := fmt.Sprintf("%v%v", at.FilterQueryString, 
 		fmt.Sprintf(userEmailFilter, emailAddress))
@@ -46,7 +46,7 @@ func RetrieveUserByEmailAddress(emailAddress string, c *at.AirtableClient) (*Use
 
 	if err != nil {
 		glog.Errorf("Received error when querying airtable %v", err)
-		return nil, nil, errors.New("received error when querying airtable for user by email")
+		return nil, errors.New("received error when querying airtable for user by email")
 	}
 
 	glog.V(8).Infof("bytes response %v", string(b))
@@ -56,7 +56,7 @@ func RetrieveUserByEmailAddress(emailAddress string, c *at.AirtableClient) (*Use
 
 	if err != nil {
 		glog.Errorf("Unable to unmarshal airtable payload %v", err)
-		return nil, nil, errors.New("unable to unmarshal airtable payload")
+		return nil, errors.New("unable to unmarshal airtable payload")
 	}
 
 	glog.V(5).Infof("airtable response has %d records", len(resp.Records))
@@ -64,7 +64,7 @@ func RetrieveUserByEmailAddress(emailAddress string, c *at.AirtableClient) (*Use
 
 	if len(resp.Records) < 1 {
 		glog.V(8).Infof("There are no users with emailAddress %s", emailAddress)
-		return nil, nil, errors.New(
+		return nil, errors.New(
 			fmt.Sprintf("No user found with this email address %s", emailAddress))
 	}
 
@@ -72,11 +72,15 @@ func RetrieveUserByEmailAddress(emailAddress string, c *at.AirtableClient) (*Use
 
 	var user User
 	fieldMap := resp.Records[0].Fields.(map[string]interface{})
-	userId := resp.Records[0].Id
+	user.Id = resp.Records[0].Id
 	user.FirstName = fieldMap["firstName"].(string)
 	user.LastName = fieldMap["lastName"].(string)
 	user.EmailAddress = fieldMap["emailAddress"].(string)
 	user.Username = fieldMap["username"].(string)
+
+	if fieldMap["active"] != nil {		
+		user.Active = fieldMap["active"].(bool)
+	}
 
 	if fieldMap["creationDate"] != nil {		
 		user.CreationDate = fieldMap["creationDate"].(uint)
@@ -86,6 +90,6 @@ func RetrieveUserByEmailAddress(emailAddress string, c *at.AirtableClient) (*Use
 		user.LastLogin = fieldMap["lastLogin"].(uint)
 	}
 
-	return &user, &userId, nil
+	return &user, nil
 
 }

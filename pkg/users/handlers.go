@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 	"github.com/golang/glog"
 	at "github.com/cpretzer/lt-backend/pkg/airtable"
 	handlers "github.com/cpretzer/lt-backend/pkg/handlers"
@@ -98,17 +99,50 @@ func HandleAddUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Reques
 }
 
 func HandleDeleteUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Request) error {
-	bytes, err := c.SendRequest(&at.AirtableRequest{
-		Method: http.MethodGet,
-		Table: "users",
-		Payload: nil,
-	})
+
+	glog.V(8).Infof("HandleDeleteUser %+v", req.Body)
+
+	deleteUser, err := UnmarshalUser(req)
 
 	if err != nil {
-		glog.Errorf("Error calling delete user %s", err)
+		glog.Errorf("Error Unmarshaling user request body %s", err)
+		handlers.WriteError(w,
+			&err,
+			http.StatusBadRequest,
+			"Unable to deactivate account")
 	}
 
-	glog.Infof("Got bytes %s", string(bytes))
+	existingUser, err := RetrieveUserByEmailAddress(deleteUser.EmailAddress, c)
+
+	if existingUser == nil {
+		glog.V(8).Infof("No user found for email %s", deleteUser.EmailAddress)	
+		handlers.WriteError(w,
+			&err,
+			http.StatusBadRequest,
+			"Unable to deactivate account")
+	}
+
+	if existingUser.Active {
+		deactivateRequest := c.CreateAirtableRequest(http.MethodPatch, usersTable)
+		existingUser.Active = false
+		existingUser.DeactivationDate = time.Now().Unix()
+		deactivateRecord := deactivateRequest.CreateRecord(existingUser)
+		deactivateRecord.Id = existingUser.Id
+		
+		deactivateRequest.AddRecordToRequest(*deactivateRecord)
+
+		bytes, err := c.SendRequest(deactivateRequest)
+
+		if err != nil {
+			glog.Errorf("Error calling delete user %s", err)
+		}
+	
+		glog.Infof("Got bytes %s", string(bytes))
+				
+	} else {
+		glog.V(8).Infof("User is already deactivated")
+	}
+
 	
 	glog.Infof("DeleteUser called %s", req.Method)
 	return nil
@@ -130,7 +164,7 @@ func HandleUpdateUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Req
 		return nil
 	}
 
-	existingUser, userId, err := RetrieveUserByEmailAddress(userUpdate.EmailAddress, c)
+	existingUser, err := RetrieveUserByEmailAddress(userUpdate.EmailAddress, c)
 
 	if existingUser == nil {
 		glog.V(8).Infof("No user found")
@@ -146,7 +180,7 @@ func HandleUpdateUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Req
 	updateRequest := c.CreateAirtableRequest(http.MethodPatch, usersTable)
 
 	updateRecord := updateRequest.CreateRecord(existingUser)
-	updateRecord.Id = *userId
+	updateRecord.Id = existingUser.Id
 	updateRequest.AddRecordToRequest(*updateRecord)
 
 	bytes, err := c.SendRequest(updateRequest)
@@ -159,4 +193,24 @@ func HandleUpdateUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Req
 	
 	glog.Infof("UpdateUser called %s", req.Method)
 	return nil
+}
+
+func getUserFromRequest(c *at.AirtableClient, req *http.Request) (*User, error) {
+	glog.V(8).Infof("HandleUpdateUser %s", req.Body)
+
+	userUpdate, err := UnmarshalUser(req)
+
+	if err != nil {
+		glog.Errorf("Error unmarshaling the user request body %s", err)
+		return nil, errors.New("Unable to update user")
+	}
+
+	existingUser, err := RetrieveUserByEmailAddress(userUpdate.EmailAddress, c)
+
+	if existingUser == nil {
+		glog.V(8).Infof("No user found")
+		return nil, errors.New("Unable to update user")
+	}
+
+	return existingUser, nil
 }

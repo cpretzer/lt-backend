@@ -24,7 +24,7 @@ type AirTableClientInterface interface{}
 
 type AirtableClient struct {
 	Key    *string
-	Url    *string
+	URL    *string
 	Client http.Client
 }
 
@@ -32,6 +32,7 @@ type AirtableRequest struct {
 	Method string
 	Table string
 	Payload *AirtablePayload
+	URL *string
 }
 
 type AirtableRecord struct {
@@ -65,23 +66,23 @@ func InitializeClient() (*AirtableClient, error) {
 
 	return &AirtableClient{
 		Key:    &airtableKey,
-		Url:    airtableUrl,
+		URL:    airtableUrl,
 		Client: initAirtableClient(),
 	}, nil
 
 }
 
 func (c *AirtableClient) SendRequest(req *AirtableRequest) ([]byte, error) {
-	url := fmt.Sprintf(*c.Url, req.Table)
+	// url := fmt.Sprintf(*req.URL)
 	
-	httpReq, err := req.buildHttpRequest(url, c.Key)
+	httpReq, err := req.buildHttpRequest(*req.URL, c.Key)
 	if err != nil {
 		glog.Errorf("Error sending the AirtableRequest %s", err)
 		return nil, err
 	}
 
 	glog.Infof("Generated HTTP request %s", httpReq.Header.Get(authorizationHeader))
-	glog.Infof("Sending request to %s using key %s", url, *c.Key)
+	glog.Infof("Sending request to %s using key %s", *req.URL, *c.Key)
 
 	resp, err := c.Client.Do(httpReq)
 	if err != nil {
@@ -167,15 +168,15 @@ func initAirtableClient() http.Client {
 
 func (c *AirtableClient) MakeGetRecordRequest(table string, recordId string) *AirtableRequest {
 	getRecordRequest := c.CreateAirtableRequest(http.MethodGet, table)
-	*c.Url = fmt.Sprintf("%s/%s", *c.Url, recordId)
-	glog.V(8).Infof("Updated client URL %s", *c.Url)
+	*getRecordRequest.URL = fmt.Sprintf("%s/%s", *getRecordRequest.URL, recordId)
+	glog.V(8).Infof("Updated client URL %s", *c.URL)
 	return getRecordRequest
 }
 
 func (c *AirtableClient) MakeFilterRecordRequest(table string, filterQuery string) *AirtableRequest {
 	filterRecordRequest := c.CreateAirtableRequest(http.MethodGet, table)
-	*c.Url = fmt.Sprintf("%s%s", *c.Url, filterQuery)
-	glog.V(8).Infof("Updated client URL for filter record %s", *c.Url)
+	*filterRecordRequest.URL = fmt.Sprintf("%s%s", *filterRecordRequest.URL, filterQuery)
+	glog.V(8).Infof("Updated client URL for filter record %s", *c.URL)
 	return filterRecordRequest
 }
 
@@ -203,10 +204,14 @@ func (c *AirtableClient) CreateAirtableRequest(method string, table string) *Air
 
 	requestRecords := make([]AirtableRecord, 0)
 
+	requestUrl := fmt.Sprintf(*c.URL, table)
+
+	glog.V(8).Infof("requestUrl %s", requestUrl)
 	airtableRequest := &AirtableRequest{
 		Method: method,
-		Table: table,
+		Table: table, // this can go away
 		Payload: &AirtablePayload{Records: requestRecords},
+		URL: &requestUrl,
 	}
 
 	glog.V(8).Infof("Created airtableRequest %+v", airtableRequest)
