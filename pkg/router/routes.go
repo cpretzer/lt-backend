@@ -5,6 +5,7 @@ import (
 	"github.com/cpretzer/lt-backend/pkg/structs"
 	"github.com/cpretzer/lt-backend/pkg/handlers"
 	"github.com/cpretzer/lt-backend/pkg/users"
+	"github.com/cpretzer/lt-backend/pkg/goals"
 )
 
 type Routes []structs.Route
@@ -44,5 +45,31 @@ var routes = Routes{
 		Method: http.MethodDelete,
 		Pattern: "/users/delete",
 		Function: users.HandleDeleteUser,
+	},
+	// TODO: Think about separating these out into a separate array of
+	// routes that can be appended
+	structs.Route{
+		Name: "GetGoal",
+		Method: http.MethodGet,
+		Pattern: "/goals",
+		Function: goals.HandleGetGoal,
+	},
+	structs.Route{
+		Name: "CreateGoal",
+		Method: http.MethodPost,
+		Pattern: "/goals/add",
+		Function: goals.HandleCreateGoal,
+	},
+	structs.Route{
+		Name: "UpdateGoal",
+		Method: http.MethodPatch,
+		Pattern: "/goals/update",
+		Function: goals.HandleUpdateGoal,
+	},
+	structs.Route{
+		Name: "DeleteUser",
+		Method: http.MethodDelete,
+		Pattern: "/goals/delete",
+		Function: goals.HandleDeleteGoal,
 	},
 }

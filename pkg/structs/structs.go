@@ -3,11 +3,12 @@ package structs
 import (
 	"net/http"
 	at "github.com/cpretzer/lt-backend/pkg/airtable"
+	user "github.com/cpretzer/lt-backend/pkg/users"
 )
 
 type Questionnaire struct {
 	Questions []Question `json:"questions,omitempty"`
-	User User `json:"question,omitempty"`
+	User user.User `json:"question,omitempty"`
 	CreationDate string `json:"creationDate,omitempty"`
 }
 
@@ -32,15 +33,6 @@ type Report struct {
 
 type ReportSummary struct {
 	SummaryDate string `json:"summaryDate"`
-}
-
-type User struct {
-	FirstName string `json:"firstName,omitempty"`
-	LastName string `json:"lastName,omitempty"`
-	Email string `json:"email,omitempty"`
-	LastLogin string `json:"lastLogin,omitempty"`
-	Password string `json:"password,omitempty"`
-	ConfirmPassword string `json:"confirmPassword,omitempty"`
 }
 
 type Route struct {

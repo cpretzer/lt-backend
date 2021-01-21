@@ -144,7 +144,7 @@ func HandleDeleteUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Req
 	}
 
 	
-	glog.Infof("DeleteUser called %s", req.Method)
+	glog.Infof("DeleteGoal called %s", req.Method)
 	return nil
 }
 
