@@ -2,9 +2,10 @@ package goals
 
 type Goal struct {
 	Category string `json:"category"`
-	Description string `json:"string,omitempty"`
-	Id string `json:"id"`
+	Description string `json:"description,omitempty"`
+	GoalId string `json:"gid,omitempty"`
+	Id string `json:"-"`
 	IsActive bool `json:"isActive"`
-	IsSystem string `json:"isSystem,omitempty"`
+	IsSystem bool `json:"isSystem,omitempty"`
 	Name string `json:"name"`
 }

@@ -2,8 +2,14 @@
 
 ## cURL
 
+### Users
+
 * Add user
-`curl -X POST http://localhost:3001/users/add -d '{"firstName":"Post", "lastName":"Test", "emailAddress":"post_test_4@chabrina.com", "username":"posttest", "password":"wordpass", "username": "posttest"}' -H "content-type: application/json; charset=UTF-8"`
+```bash
+curl -X POST http://localhost:3001/users/add \
+ -d '{"firstName":"Post", "lastName":"Test", "emailAddress":"post_test_4@chabrina.com", "username":"posttest", "password":"wordpass", "username": "posttest"}' \
+ -H "content-type: application/json; charset=UTF-8"
+```
 
 * Get user
 `curl http://localhost:3001/users?id=recbR2ySUkyjHN52C`
@@ -18,3 +24,32 @@
 
 * Delete user
 `curl -X DELETE http://localhost:3001/users/delete -d '{"firstName":"Update", "lastName":"Test Update", "emailAddress":"post_test@chabrina.com", "username":"updatetest", "password":"wordpass", "username": "posttest"}' -H "content-type: application/json; charset=UTF-8"`
+
+### Goals
+
+* Add Goal
+```bash
+curl -X POST \
+  http://localhost:3001/goals/add \
+  -d '{"category":"Test", "Description":"Test Goal", "isActive":true, "isSystem":true, "Name":"Test Goal 2"}' \
+  -H "content-type: application/json; charset=UTF-8"
+```
+
+* Get Goal
+`curl http://localhost:3001/goals?id=recRFMLZugD9uij0Y`
+
+* Update Goal
+```bash
+curl -X PATCH \
+  http://localhost:3001/goals/update \
+  -d '{"isActive":false, "gid":"recRFMLZugD9uij0Y"}' \
+  -H "content-type: application/json; charset=UTF-8"
+```
+
+* Delete user
+```bash
+  curl -X DELETE \
+  http://localhost:3001/goals/delete \
+  -d '{"gid":"recRFMLZugD9uij0Y"}' \
+  -H "content-type: application/json; charset=UTF-8"
+```

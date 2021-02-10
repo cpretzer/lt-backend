@@ -69,12 +69,16 @@ func HandleCreateGoal(c *at.AirtableClient, w http.ResponseWriter, req *http.Req
 	return nil
 }
 
+// HandleUpdateGoal handles requests to the route defined in routes.go
+// It takes a PUT request, transforms it, and sends it to Airtable
 func HandleUpdateGoal(c *at.AirtableClient, w http.ResponseWriter, req *http.Request) error {
 
 	glog.V(8).Infof("HandleUpdateGoal %s", req.Body)
 
+	// Get the goal from the request body
 	goalUpdate, err := UnmarshalGoal(req)
 
+	// If there is an error, propagate it back to the client
 	if err != nil {
 		glog.Errorf("Error unmarshaling the goal request body %s", err)
 		handlers.WriteError(w,
@@ -85,9 +89,11 @@ func HandleUpdateGoal(c *at.AirtableClient, w http.ResponseWriter, req *http.Req
 		return nil
 	}
 
-	goalId := req.URL.Query().Get(handlers.IdParam)
+	goalId := goalUpdate.GoalId
 
 	existingGoal, err := doGetGoal(c, goalId)
+
+	glog.V(8).Infof("got existing goal %+v", existingGoal)
 
 	if existingGoal == nil {
 		glog.V(8).Infof("No goal found")
@@ -97,6 +103,7 @@ func HandleUpdateGoal(c *at.AirtableClient, w http.ResponseWriter, req *http.Req
 	}
 
 	existingGoal.IsSystem = goalUpdate.IsSystem
+	existingGoal.IsActive = goalUpdate.IsActive
 
 	updateRequest := c.CreateAirtableRequest(http.MethodPatch, goalsTable)
 
@@ -126,7 +133,7 @@ func getGoalFromRequest(c *at.AirtableClient, req *http.Request) (*Goal, error) 
 		return nil, errors.New("Unable to update goal")
 	}
 
-	existingGoal, err := doGetGoal(c, goalUpdate.Id)
+	existingGoal, err := doGetGoal(c, goalUpdate.GoalId)
 
 	if existingGoal == nil {
 		glog.V(8).Infof("No goal found")
