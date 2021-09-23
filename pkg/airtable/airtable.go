@@ -10,14 +10,15 @@ import (
 	"net/http"
 	"os"
 	"time"
+
 	"github.com/golang/glog"
 )
 
 const (
 	airtableKeyVariable  = "AIRTABLE_KEY"
-	airtableBaseVariable  = "AIRTABLE_BASE"
+	airtableBaseVariable = "AIRTABLE_BASE"
 	airtableHostVariable = "AIRTABLE_HOST"
-	defaultAirtableHost = "https://api.airtable.com/v0/"
+	defaultAirtableHost  = "https://api.airtable.com/v0/"
 )
 
 type AirTableClientInterface interface{}
@@ -29,16 +30,16 @@ type AirtableClient struct {
 }
 
 type AirtableRequest struct {
-	Method string
-	Table string
+	Method  string
+	Table   string
 	Payload *AirtablePayload
-	URL *string
+	URL     *string
 }
 
 type AirtableRecord struct {
-	CreatedTime string     `json:"createdTime,omitempty"`
+	CreatedTime string      `json:"createdTime,omitempty"`
 	Fields      interface{} `json:"fields,omitempty"`
-	Id          string     `json:"id,omitempty"`
+	Id          string      `json:"id,omitempty"`
 }
 
 type AirtablePayload struct {
@@ -74,7 +75,12 @@ func InitializeClient() (*AirtableClient, error) {
 
 func (c *AirtableClient) SendRequest(req *AirtableRequest) ([]byte, error) {
 	// url := fmt.Sprintf(*req.URL)
-	
+
+	if req == nil {
+		glog.Error("The request URL in SendRequest is nil")
+		return nil, errors.New("The request URL in SendRequest is nil")
+	}
+
 	httpReq, err := req.buildHttpRequest(*req.URL, c.Key)
 	if err != nil {
 		glog.Errorf("Error sending the AirtableRequest %s", err)
@@ -105,7 +111,7 @@ func (c *AirtableClient) SendRequest(req *AirtableRequest) ([]byte, error) {
 		return nil, errors.New(
 			fmt.Sprintf("Airtable response is an error %s", err))
 	}
-	
+
 	return respBytes, nil
 }
 
@@ -119,7 +125,6 @@ func (r *AirtableRequest) buildHttpRequest(url string, key *string) (*http.Reque
 		glog.Errorf("Encoded Bytes error %s", err)
 		return nil, err
 	}
-
 
 	httpReq, err := http.NewRequest(
 		r.Method,
@@ -137,7 +142,6 @@ func (r *AirtableRequest) buildHttpRequest(url string, key *string) (*http.Reque
 	return httpReq, nil
 }
 
-
 func generateAirtableURL() (*string, error) {
 	airtableBaseId, isSet := os.LookupEnv(airtableBaseVariable)
 
@@ -151,7 +155,7 @@ func generateAirtableURL() (*string, error) {
 		airtableHost = defaultAirtableHost
 	}
 
-	airtableBaseUrl := fmt.Sprintf(airtableHost + "%s", airtableBaseId) + "/%s"
+	airtableBaseUrl := fmt.Sprintf(airtableHost+"%s", airtableBaseId) + "/%s"
 
 	// url := fmt.Sprintf(airtableBaseUrl, airtableBaseVariable)
 
@@ -193,7 +197,7 @@ func (r *AirtableRequest) CreateRecord(fields interface{}) *AirtableRecord {
 	return airtableRecord
 }
 
-func (r *AirtableRequest) AddRecordToRequest(rec AirtableRecord) {	
+func (r *AirtableRequest) AddRecordToRequest(rec AirtableRecord) {
 
 	r.Payload.Records = append(r.Payload.Records, rec)
 
@@ -208,10 +212,10 @@ func (c *AirtableClient) CreateAirtableRequest(method string, table string) *Air
 
 	glog.V(8).Infof("requestUrl %s", requestUrl)
 	airtableRequest := &AirtableRequest{
-		Method: method,
-		Table: table, // this can go away
+		Method:  method,
+		Table:   table, // this can go away
 		Payload: &AirtablePayload{Records: requestRecords},
-		URL: &requestUrl,
+		URL:     &requestUrl,
 	}
 
 	glog.V(8).Infof("Created airtableRequest %+v", airtableRequest)

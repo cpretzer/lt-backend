@@ -17,15 +17,15 @@ limitations under the License.
 package main
 
 import (
-
 	"flag"
 	"fmt"
-	"github.com/golang/glog"
 	"net/http"
 	"os"
 	"time"
-	"github.com/cpretzer/lt-backend/pkg/router"
+
 	at "github.com/cpretzer/lt-backend/pkg/airtable"
+	"github.com/cpretzer/lt-backend/pkg/router"
+	"github.com/golang/glog"
 )
 
 func main() {
@@ -34,7 +34,6 @@ func main() {
 	flag.Parse()
 
 	glog.Info("GLOG: Starting invitations service")
-
 
 	airtableClient, err := at.InitializeClient()
 	if err != nil {
@@ -55,7 +54,7 @@ func main() {
 
 	glog.Infof("%s Initialized airtable client %+v", now, airtableClient)
 	// Listen for requests on port :8080 with router and logging
-	err = http.ListenAndServe(":"+port, router)
+	err = http.ListenAndServe("localhost:"+port, router)
 	if err != nil {
 		glog.Fatalf("ListenAndServe error %s", err)
 	}
