@@ -1,19 +1,19 @@
 package structs
 
 import (
-	"net/http"
-	at "github.com/cpretzer/lt-backend/pkg/airtable"
 	user "github.com/cpretzer/lt-backend/pkg/users"
+	at "github.com/cpretzer/tavolo-dellaria"
+	"net/http"
 )
 
 type Questionnaire struct {
-	Questions []Question `json:"questions,omitempty"`
-	User user.User `json:"question,omitempty"`
-	CreationDate string `json:"creationDate,omitempty"`
+	Questions    []Question `json:"questions,omitempty"`
+	User         user.User  `json:"question,omitempty"`
+	CreationDate string     `json:"creationDate,omitempty"`
 }
 
 type Question struct {
-	Text string `json:"text,omitempty"`
+	Text     string           `json:"text,omitempty"`
 	Category QuestionCategory `json:"questionCategory,omitempty"`
 }
 
@@ -22,13 +22,13 @@ type QuestionCategory struct {
 }
 
 type QuestionnaireResponse struct {
-	Question Question `json:"question,omitempty"`
-	CreationDate string `json:"creationDate,omitempty"`
+	Question     Question `json:"question,omitempty"`
+	CreationDate string   `json:"creationDate,omitempty"`
 }
 
 type Report struct {
-	Responses []QuestionnaireResponse `json:"responses,omitempty"`
-	ReportDate string `json:"reportDate,omitemptry"`
+	Responses  []QuestionnaireResponse `json:"responses,omitempty"`
+	ReportDate string                  `json:"reportDate,omitemptry"`
 }
 
 type ReportSummary struct {
@@ -56,4 +56,3 @@ type Error interface {
 	error
 	Status() int
 }
-

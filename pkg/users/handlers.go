@@ -5,15 +5,16 @@ import (
 	"errors"
 	"net/http"
 	"time"
-	"github.com/golang/glog"
-	at "github.com/cpretzer/lt-backend/pkg/airtable"
+
 	handlers "github.com/cpretzer/lt-backend/pkg/handlers"
+	at "github.com/cpretzer/tavolo-dellaria"
+	"github.com/golang/glog"
 )
 
 func HandleGetUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Request) error {
 
 	userId := req.URL.Query().Get(handlers.IdParam)
-	
+
 	var err error
 	if userId == "" {
 		glog.Errorf("No ID parameter")
@@ -24,8 +25,8 @@ func HandleGetUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Reques
 			"Unable to update user",
 		)
 		return nil
-	}	
-	
+	}
+
 	getUserRequest := c.MakeGetRecordRequest(usersTable, userId)
 
 	bytes, err := c.SendRequest(getUserRequest)
@@ -41,7 +42,7 @@ func HandleGetUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Reques
 	}
 
 	glog.Infof("Got bytes %s", string(bytes))
-	
+
 	var user User
 	err = json.Unmarshal(bytes, &user)
 
@@ -84,7 +85,7 @@ func HandleAddUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Reques
 
 	addUserRecord := addUserRequest.CreateRecord(user)
 
-	addUserRequest.AddRecordToRequest(*addUserRecord)	
+	addUserRequest.AddRecordToRequest(*addUserRecord)
 
 	bytes, err := c.SendRequest(addUserRequest)
 
@@ -93,7 +94,7 @@ func HandleAddUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Reques
 	}
 
 	glog.Infof("Got bytes %s", string(bytes))
-	
+
 	glog.Infof("AddUser called %s", req.Method)
 	return nil
 }
@@ -115,7 +116,7 @@ func HandleDeleteUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Req
 	existingUser, err := RetrieveUserByEmailAddress(deleteUser.EmailAddress, c)
 
 	if existingUser == nil {
-		glog.V(8).Infof("No user found for email %s", deleteUser.EmailAddress)	
+		glog.V(8).Infof("No user found for email %s", deleteUser.EmailAddress)
 		handlers.WriteError(w,
 			&err,
 			http.StatusBadRequest,
@@ -128,7 +129,7 @@ func HandleDeleteUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Req
 		existingUser.DeactivationDate = time.Now().Unix()
 		deactivateRecord := deactivateRequest.CreateRecord(existingUser)
 		deactivateRecord.Id = existingUser.Id
-		
+
 		deactivateRequest.AddRecordToRequest(*deactivateRecord)
 
 		bytes, err := c.SendRequest(deactivateRequest)
@@ -136,14 +137,13 @@ func HandleDeleteUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Req
 		if err != nil {
 			glog.Errorf("Error calling delete user %s", err)
 		}
-	
+
 		glog.Infof("Got bytes %s", string(bytes))
-				
+
 	} else {
 		glog.V(8).Infof("User is already deactivated")
 	}
 
-	
 	glog.Infof("DeleteGoal called %s", req.Method)
 	return nil
 }
@@ -168,7 +168,7 @@ func HandleUpdateUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Req
 
 	if existingUser == nil {
 		glog.V(8).Infof("No user found")
-		handlers.WriteError(w, &err, 
+		handlers.WriteError(w, &err,
 			http.StatusBadRequest, "Unable to update user")
 		return nil
 	}
@@ -190,7 +190,7 @@ func HandleUpdateUser(c *at.AirtableClient, w http.ResponseWriter, req *http.Req
 	}
 
 	glog.Infof("Got bytes %s", string(bytes))
-	
+
 	glog.Infof("UpdateUser called %s", req.Method)
 	return nil
 }

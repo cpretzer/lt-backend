@@ -1,12 +1,12 @@
 package goals
 
 import (
-	"fmt"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/golang/glog"
 	"io/ioutil"
 	"net/http"
-	"github.com/golang/glog"	
 )
 
 func UnmarshalGoal(req *http.Request) (*Goal, error) {

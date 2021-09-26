@@ -2,15 +2,15 @@ package handlers
 
 import (
 	"encoding/json"
+	"github.com/golang/glog"
 	"math/rand"
 	"net/http"
 	"strings"
 	"time"
-	"github.com/golang/glog"
 )
 
 const (
-	randStringArray     = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890~!@#$%^&*()|}{"
+	randStringArray = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890~!@#$%^&*()|}{"
 )
 
 func WriteError(w http.ResponseWriter, e *error, code uint, message string) error {

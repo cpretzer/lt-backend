@@ -23,8 +23,8 @@ import (
 	"os"
 	"time"
 
-	at "github.com/cpretzer/lt-backend/pkg/airtable"
 	"github.com/cpretzer/lt-backend/pkg/router"
+	at "github.com/cpretzer/tavolo-dellaria"
 	"github.com/golang/glog"
 )
 

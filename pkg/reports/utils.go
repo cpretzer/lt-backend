@@ -1,15 +1,15 @@
 package goals
 
 import (
-	"fmt"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/golang/glog"
 	"io/ioutil"
 	"net/http"
-	"github.com/golang/glog"	
 )
 
-func UnmarshalGoal(req *http.Request) (*Report, error) {
+func UnmarshalReport(req *http.Request) (*Report, error) {
 
 	body, err := ioutil.ReadAll(req.Body)
 
@@ -32,7 +32,7 @@ func UnmarshalGoal(req *http.Request) (*Report, error) {
 
 	if &report == nil /* || report.GoalId == ""*/ {
 		glog.Errorf("The report is nil")
-		return nil, errors.New(fmt.Sprintf("Can't find the report in %s", 
+		return nil, errors.New(fmt.Sprintf("Can't find the report in %s",
 			string(body)))
 	}
 

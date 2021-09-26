@@ -4,16 +4,17 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"github.com/golang/glog"
-	at "github.com/cpretzer/lt-backend/pkg/airtable"
+
 	handlers "github.com/cpretzer/lt-backend/pkg/handlers"
+	at "github.com/cpretzer/tavolo-dellaria"
+	"github.com/golang/glog"
 )
 
 func HandleGetGoal(c *at.AirtableClient, w http.ResponseWriter, req *http.Request) error {
-	
+
 	goalId := req.URL.Query().Get(handlers.IdParam)
 
-	goal, err := doGetGoal(c, goalId)
+	goal, err := doGetReport(c, goalId)
 
 	if err != nil {
 		handlers.WriteError(w,
@@ -33,14 +34,14 @@ func HandleGetGoal(c *at.AirtableClient, w http.ResponseWriter, req *http.Reques
 	return nil
 }
 
-func HandleCreateGoal(c *at.AirtableClient, w http.ResponseWriter, req *http.Request) error {
+func HandleCreateReport(c *at.AirtableClient, w http.ResponseWriter, req *http.Request) error {
 
-	glog.V(5).Infof("create goal %v", req.Body)
+	glog.V(5).Infof("create Report %v", req.Body)
 
-	goal, err := UnmarshalGoal(req)
+	report, err := UnmarshalReport(req)
 
 	if err != nil {
-		glog.Errorf("Error unmarshaling the goal request body %s", err)
+		glog.Errorf("Error unmarshaling the report request body %s", err)
 		handlers.WriteError(w,
 			&err,
 			http.StatusBadRequest,
@@ -49,34 +50,34 @@ func HandleCreateGoal(c *at.AirtableClient, w http.ResponseWriter, req *http.Req
 		return nil
 	}
 
-	addGoalRequest := c.CreateAirtableRequest(http.MethodPost, goalsTable)
+	addReportRequest := c.CreateAirtableRequest(http.MethodPost, reportsTable)
 
-	glog.V(8).Infof("Created add goal request %+v", addGoalRequest)
+	glog.V(8).Infof("Created add report request %+v", addReportRequest)
 
-	addGoalRecord := addGoalRequest.CreateRecord(goal)
+	addReportRecord := addReportRequest.CreateRecord(report)
 
-	addGoalRequest.AddRecordToRequest(*addGoalRecord)	
+	addReportRequest.AddRecordToRequest(*addReportRecord)
 
-	bytes, err := c.SendRequest(addGoalRequest)
+	bytes, err := c.SendRequest(addReportRequest)
 
 	if err != nil {
-		glog.Errorf("Error calling add goal %s", err)
+		glog.Errorf("Error calling add report %s", err)
 	}
 
 	glog.Infof("Got bytes %s", string(bytes))
-	
-	glog.Infof("CreateGoal called %s", req.Method)
+
+	glog.Infof("CreateReport called %s", req.Method)
 	return nil
 }
 
-// HandleUpdateGoal handles requests to the route defined in routes.go
+// HandleUpdateReport  handles requests to the route defined in routes.go
 // It takes a PUT request, transforms it, and sends it to Airtable
 func HandleUpdateGoal(c *at.AirtableClient, w http.ResponseWriter, req *http.Request) error {
 
 	glog.V(8).Infof("HandleUpdateGoal %s", req.Body)
 
-	// Get the goal from the request body
-	goalUpdate, err := UnmarshalGoal(req)
+	// Get the report from the request body
+	reportUpdate, err := UnmarshalReport(req)
 
 	// If there is an error, propagate it back to the client
 	if err != nil {
@@ -89,26 +90,25 @@ func HandleUpdateGoal(c *at.AirtableClient, w http.ResponseWriter, req *http.Req
 		return nil
 	}
 
-	goalId := goalUpdate.GoalId
+	reportId := reportUpdate.ReportId
 
-	existingGoal, err := doGetGoal(c, goalId)
+	existingReport, err := doGetReport(c, reportId)
 
-	glog.V(8).Infof("got existing goal %+v", existingGoal)
+	glog.V(8).Infof("got existing report %+v", existingReport)
 
-	if existingGoal == nil {
-		glog.V(8).Infof("No goal found")
-		handlers.WriteError(w, &err, 
-			http.StatusBadRequest, "Unable to update goal")
+	if existingReport == nil {
+		glog.V(8).Infof("No report found")
+		handlers.WriteError(w, &err,
+			http.StatusBadRequest, "Unable to update report")
 		return nil
 	}
 
-	existingGoal.IsSystem = goalUpdate.IsSystem
-	existingGoal.IsActive = goalUpdate.IsActive
+	existingReport.IsActive = reportUpdate.IsActive
 
-	updateRequest := c.CreateAirtableRequest(http.MethodPatch, goalsTable)
+	updateRequest := c.CreateAirtableRequest(http.MethodPatch, reportsTable)
 
-	updateRecord := updateRequest.CreateRecord(existingGoal)
-	updateRecord.Id = existingGoal.Id
+	updateRecord := updateRequest.CreateRecord(existingReport)
+	updateRecord.Id = existingReport.Id
 	updateRequest.AddRecordToRequest(*updateRecord)
 
 	bytes, err := c.SendRequest(updateRequest)
@@ -118,130 +118,122 @@ func HandleUpdateGoal(c *at.AirtableClient, w http.ResponseWriter, req *http.Req
 	}
 
 	glog.Infof("Got bytes %s", string(bytes))
-	
+
 	glog.Infof("UpdateGoal called %s", req.Method)
 	return nil
 }
 
-func getGoalFromRequest(c *at.AirtableClient, req *http.Request) (*Goal, error) {
-	glog.V(8).Infof("GetGoalFromRequest %s", req.Body)
+func getReportFromRequest(c *at.AirtableClient, req *http.Request) (*Report, error) {
+	glog.V(8).Infof("GetReportFromRequest %s", req.Body)
 
-	goalUpdate, err := UnmarshalGoal(req)
+	reportUpdate, err := UnmarshalReport(req)
 
 	if err != nil {
-		glog.Errorf("Error unmarshaling the goal request body %s", err)
-		return nil, errors.New("Unable to update goal")
+		glog.Errorf("Error unmarshaling the report request body %s", err)
+		return nil, errors.New("Unable to update report")
 	}
 
-	existingGoal, err := doGetGoal(c, goalUpdate.GoalId)
+	existingReport, err := doGetReport(c, reportUpdate.ReportId)
 
-	if existingGoal == nil {
-		glog.V(8).Infof("No goal found")
-		return nil, errors.New("Unable to get goal")
+	if existingReport == nil {
+		glog.V(8).Infof("No report found")
+		return nil, errors.New("Unable to get report")
 	}
 
-	glog.V(8).Infof("Retrieved goal %+v", existingGoal)
+	glog.V(8).Infof("Retrieved report %+v", existingReport)
 
-	return existingGoal, nil
+	return existingReport, nil
 }
 
-func HandleDeleteGoal(c *at.AirtableClient, w http.ResponseWriter, req *http.Request) error {
+func HandleDeleteReport(c *at.AirtableClient, w http.ResponseWriter, req *http.Request) error {
 
-	goal, err := getGoalFromRequest(c, req)
+	report, err := getReportFromRequest(c, req)
 
 	if err != nil {
-		glog.Errorf("Error getting the goal from the request %s", err)
+		glog.Errorf("Error getting the report from the request %s", err)
 		handlers.WriteError(w,
 			&err,
 			http.StatusBadRequest,
-			"Error deleting the goal")
+			"Error deleting the report")
 		return nil
 	}
 
-	glog.V(8).Infof("Goal active %+v", goal.IsActive)
+	glog.V(8).Infof("Report active %+v", report.IsActive)
 
-	if goal.IsActive {
-		deactivateRequest := c.CreateAirtableRequest(http.MethodPatch, goalsTable)
-		goal.IsActive = false
+	if report.IsActive {
+		deactivateRequest := c.CreateAirtableRequest(http.MethodPatch, reportsTable)
+		report.IsActive = false
 		// existingUser.DeactivationDate = time.Now().Unix()
-		deactivateRecord := deactivateRequest.CreateRecord(goal)
-		deactivateRecord.Id = goal.Id
-		
+		deactivateRecord := deactivateRequest.CreateRecord(report)
+		deactivateRecord.Id = report.Id
+
 		deactivateRequest.AddRecordToRequest(*deactivateRecord)
 
 		bytes, err := c.SendRequest(deactivateRequest)
 
 		if err != nil {
-			glog.Errorf("Error calling delete user %s", err)
+			glog.Errorf("Error calling delete report %s", err)
 		}
-	
+
 		glog.Infof("Got bytes %s", string(bytes))
-				
+
 	} else {
-		glog.V(8).Infof("User is already deactivated")
+		glog.V(8).Infof("Report is already deactivated")
 	}
 
 	return nil
 }
 
-func doGetGoal(c *at.AirtableClient, id string) (*Goal, error) {
-	
+func doGetReport(c *at.AirtableClient, id string) (*Report, error) {
+
 	var err error
 	if id == "" {
-		glog.Errorf("HandleGetGoal no ID parameter")
-		err := errors.New("No goal ID param")
+		glog.Errorf("HandleGetReport no ID parameter")
+		err := errors.New("No report ID param")
 		return nil, err
-	}	
-	
-	airtableReq := c.MakeGetRecordRequest(goalsTable, id)
+	}
+
+	airtableReq := c.MakeGetRecordRequest(reportsTable, id)
 
 	bytes, err := c.SendRequest(airtableReq)
 
 	if err != nil {
-		glog.Errorf("Error calling get goal %s", err)
+		glog.Errorf("Error calling get report %s", err)
 		return nil, err
 	}
 
 	glog.Infof("Got bytes %s", string(bytes))
-	
+
 	var atRecord at.AirtableRecord
 	err = json.Unmarshal(bytes, &atRecord)
 
 	if err != nil {
-		glog.Errorf("Error unmarshaling the goal record body %s", err)
+		glog.Errorf("Error unmarshaling the report record body %s", err)
 		return nil, err
-	}	
-
-	var goal Goal
-	fieldMap := atRecord.Fields.(map[string]interface{})
-	goal.Id = fieldMap["id"].(string)
-
-	if fieldMap["category"] != nil {
-		goal.Category = fieldMap["category"].(string)
 	}
+
+	var report Report
+	fieldMap := atRecord.Fields.(map[string]interface{})
+	report.Id = fieldMap["id"].(string)
 
 	if fieldMap["name"] != nil {
-		goal.Name = fieldMap["name"].(string)
+		report.Name = fieldMap["name"].(string)
 	}
 
-	if fieldMap["description"] != nil {
-		goal.Description = fieldMap["description"].(string)
-	}
-	
+	// if fieldMap["description"] != nil {
+	// 	report.Description = fieldMap["description"].(string)
+	// }
+
 	if fieldMap["isActive"] != nil {
-		goal.IsActive = fieldMap["isActive"].(bool)
-	}
-	
-	if fieldMap["isSystem"] != nil {
-		goal.IsActive = fieldMap["isSystem"].(bool)
+		report.IsActive = fieldMap["isActive"].(bool)
 	}
 
 	if err != nil {
 		glog.Errorf("Error unmarshaling the goal from the record %s", err)
 		return nil, err
-	}	
+	}
 
-	glog.V(8).Infof("returning goal %+v", &goal)
+	glog.V(8).Infof("returning report %+v", &report)
 
-	return &goal, err
+	return &report, err
 }

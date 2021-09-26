@@ -1,11 +1,11 @@
 package router
 
 import (
-	"net/http"
+	"github.com/cpretzer/lt-backend/pkg/structs"
+	at "github.com/cpretzer/tavolo-dellaria"
 	"github.com/golang/glog"
 	"github.com/gorilla/mux"
-	"github.com/cpretzer/lt-backend/pkg/structs"
-	at "github.com/cpretzer/lt-backend/pkg/airtable"
+	"net/http"
 )
 
 // Router for associating HTTP requests with functions based on URI
@@ -38,9 +38,8 @@ type HttpResponseError struct {
 // an environment object
 type Handler struct {
 	AirtableClient *at.AirtableClient
-	H func(atClient *at.AirtableClient, w http.ResponseWriter, r *http.Request) error
+	H              func(atClient *at.AirtableClient, w http.ResponseWriter, r *http.Request) error
 }
-
 
 // ServeHTTP is called on each HTTP request. Specifies which function is
 // called as well as how errors are handled and how logging is set
@@ -62,7 +61,6 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 func NewHttpResponseError(msg string) error {
 	return &HttpResponseError{
 		errorMessage: msg,
@@ -72,4 +70,3 @@ func NewHttpResponseError(msg string) error {
 func (e *HttpResponseError) Error() string {
 	return e.errorMessage
 }
-

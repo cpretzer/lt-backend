@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/golang/glog"
 	"io/ioutil"
 	"net/http"
-	at "github.com/cpretzer/lt-backend/pkg/airtable"
+
+	at "github.com/cpretzer/tavolo-dellaria"
+	"github.com/golang/glog"
 )
 
 func UnmarshalUser(req *http.Request) (*User, error) {
@@ -34,13 +35,12 @@ func UnmarshalUser(req *http.Request) (*User, error) {
 
 func RetrieveUserByEmailAddress(emailAddress string, c *at.AirtableClient) (*User, error) {
 
-	queryString := fmt.Sprintf("%v%v", at.FilterQueryString, 
+	queryString := fmt.Sprintf("%v%v", at.FilterQueryString,
 		fmt.Sprintf(userEmailFilter, emailAddress))
 
 	glog.V(5).Infof("airtable query string %v", queryString)
 
 	userEmailRequest := c.MakeFilterRecordRequest(usersTable, queryString)
-	
 
 	b, err := c.SendRequest(userEmailRequest)
 
@@ -78,11 +78,11 @@ func RetrieveUserByEmailAddress(emailAddress string, c *at.AirtableClient) (*Use
 	user.EmailAddress = fieldMap["emailAddress"].(string)
 	user.Username = fieldMap["username"].(string)
 
-	if fieldMap["active"] != nil {		
+	if fieldMap["active"] != nil {
 		user.Active = fieldMap["active"].(bool)
 	}
 
-	if fieldMap["creationDate"] != nil {		
+	if fieldMap["creationDate"] != nil {
 		user.CreationDate = fieldMap["creationDate"].(uint)
 	}
 

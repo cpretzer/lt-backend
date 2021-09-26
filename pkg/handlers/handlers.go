@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	at "github.com/cpretzer/lt-backend/pkg/airtable"
+	at "github.com/cpretzer/tavolo-dellaria"
 	"github.com/golang/glog"
 )
 

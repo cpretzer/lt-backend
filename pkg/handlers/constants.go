@@ -8,5 +8,5 @@ const (
 	jsonContentType     = "application/json"
 	jsonUtf8            = "application/json; charset=UTF-8"
 	formUrlEncoded      = "application/x-www-form-urlencoded"
-	IdParam = "id"
+	IdParam             = "id"
 )

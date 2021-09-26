@@ -1,6 +1,6 @@
 package users
 
 const (
-	usersTable = "users"
+	usersTable      = "users"
 	userEmailFilter = "{emailAddress}=\"%v\""
 )

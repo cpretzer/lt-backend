@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"github.com/golang/glog"
-	at "github.com/cpretzer/lt-backend/pkg/airtable"
+
 	handlers "github.com/cpretzer/lt-backend/pkg/handlers"
+	at "github.com/cpretzer/tavolo-dellaria"
+	"github.com/golang/glog"
 )
 
 func HandleGetGoal(c *at.AirtableClient, w http.ResponseWriter, req *http.Request) error {
-	
+
 	goalId := req.URL.Query().Get(handlers.IdParam)
 
 	goal, err := doGetGoal(c, goalId)
@@ -55,7 +56,7 @@ func HandleCreateGoal(c *at.AirtableClient, w http.ResponseWriter, req *http.Req
 
 	addGoalRecord := addGoalRequest.CreateRecord(goal)
 
-	addGoalRequest.AddRecordToRequest(*addGoalRecord)	
+	addGoalRequest.AddRecordToRequest(*addGoalRecord)
 
 	bytes, err := c.SendRequest(addGoalRequest)
 
@@ -64,7 +65,7 @@ func HandleCreateGoal(c *at.AirtableClient, w http.ResponseWriter, req *http.Req
 	}
 
 	glog.Infof("Got bytes %s", string(bytes))
-	
+
 	glog.Infof("CreateGoal called %s", req.Method)
 	return nil
 }
@@ -97,7 +98,7 @@ func HandleUpdateGoal(c *at.AirtableClient, w http.ResponseWriter, req *http.Req
 
 	if existingGoal == nil {
 		glog.V(8).Infof("No goal found")
-		handlers.WriteError(w, &err, 
+		handlers.WriteError(w, &err,
 			http.StatusBadRequest, "Unable to update goal")
 		return nil
 	}
@@ -118,7 +119,7 @@ func HandleUpdateGoal(c *at.AirtableClient, w http.ResponseWriter, req *http.Req
 	}
 
 	glog.Infof("Got bytes %s", string(bytes))
-	
+
 	glog.Infof("UpdateGoal called %s", req.Method)
 	return nil
 }
@@ -166,33 +167,33 @@ func HandleDeleteGoal(c *at.AirtableClient, w http.ResponseWriter, req *http.Req
 		// existingUser.DeactivationDate = time.Now().Unix()
 		deactivateRecord := deactivateRequest.CreateRecord(goal)
 		deactivateRecord.Id = goal.Id
-		
+
 		deactivateRequest.AddRecordToRequest(*deactivateRecord)
 
 		bytes, err := c.SendRequest(deactivateRequest)
 
 		if err != nil {
-			glog.Errorf("Error calling delete user %s", err)
+			glog.Errorf("Error calling delete goal %s", err)
 		}
-	
+
 		glog.Infof("Got bytes %s", string(bytes))
-				
+
 	} else {
-		glog.V(8).Infof("User is already deactivated")
+		glog.V(8).Infof("Goal is already deactivated")
 	}
 
 	return nil
 }
 
 func doGetGoal(c *at.AirtableClient, id string) (*Goal, error) {
-	
+
 	var err error
 	if id == "" {
 		glog.Errorf("HandleGetGoal no ID parameter")
 		err := errors.New("No goal ID param")
 		return nil, err
-	}	
-	
+	}
+
 	airtableReq := c.MakeGetRecordRequest(goalsTable, id)
 
 	bytes, err := c.SendRequest(airtableReq)
@@ -203,14 +204,14 @@ func doGetGoal(c *at.AirtableClient, id string) (*Goal, error) {
 	}
 
 	glog.Infof("Got bytes %s", string(bytes))
-	
+
 	var atRecord at.AirtableRecord
 	err = json.Unmarshal(bytes, &atRecord)
 
 	if err != nil {
 		glog.Errorf("Error unmarshaling the goal record body %s", err)
 		return nil, err
-	}	
+	}
 
 	var goal Goal
 	fieldMap := atRecord.Fields.(map[string]interface{})
@@ -227,19 +228,19 @@ func doGetGoal(c *at.AirtableClient, id string) (*Goal, error) {
 	if fieldMap["description"] != nil {
 		goal.Description = fieldMap["description"].(string)
 	}
-	
+
 	if fieldMap["isActive"] != nil {
 		goal.IsActive = fieldMap["isActive"].(bool)
 	}
-	
+
 	if fieldMap["isSystem"] != nil {
-		goal.IsActive = fieldMap["isSystem"].(bool)
+		goal.IsSystem = fieldMap["isSystem"].(bool)
 	}
 
 	if err != nil {
 		glog.Errorf("Error unmarshaling the goal from the record %s", err)
 		return nil, err
-	}	
+	}
 
 	glog.V(8).Infof("returning goal %+v", &goal)
 
