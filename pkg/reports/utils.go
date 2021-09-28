@@ -2,11 +2,11 @@ package goals
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"github.com/golang/glog"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/golang/glog"
 )
 
 func UnmarshalReport(req *http.Request) (*Report, error) {
@@ -30,10 +30,9 @@ func UnmarshalReport(req *http.Request) (*Report, error) {
 
 	glog.V(8).Infof("Unmarshaled report %+v", report)
 
-	if &report == nil /* || report.GoalId == ""*/ {
+	if report.ReportId == "" {
 		glog.Errorf("The report is nil")
-		return nil, errors.New(fmt.Sprintf("Can't find the report in %s",
-			string(body)))
+		return nil, fmt.Errorf("can't find the report in %s", string(body))
 	}
 
 	return &report, nil

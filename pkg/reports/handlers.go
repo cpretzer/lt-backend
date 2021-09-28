@@ -130,14 +130,18 @@ func getReportFromRequest(c *at.AirtableClient, req *http.Request) (*Report, err
 
 	if err != nil {
 		glog.Errorf("Error unmarshaling the report request body %s", err)
-		return nil, errors.New("Unable to update report")
+		return nil, errors.New("unable to update report")
 	}
 
 	existingReport, err := doGetReport(c, reportUpdate.ReportId)
 
+	if err != nil {
+		glog.Errorf("There was an error getting the report %s", err)
+	}
+
 	if existingReport == nil {
 		glog.V(8).Infof("No report found")
-		return nil, errors.New("Unable to get report")
+		return nil, errors.New("unable to get report")
 	}
 
 	glog.V(8).Infof("Retrieved report %+v", existingReport)
@@ -189,7 +193,7 @@ func doGetReport(c *at.AirtableClient, id string) (*Report, error) {
 	var err error
 	if id == "" {
 		glog.Errorf("HandleGetReport no ID parameter")
-		err := errors.New("No report ID param")
+		err := errors.New("no report ID param")
 		return nil, err
 	}
 
